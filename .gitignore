@@ -1,0 +1,15 @@
+# Secrets — leven alleen in GitHub Secrets / lokale .env, NOOIT in git
+.env
+
+# Database (leeft in GitHub Actions cache)
+listings.db
+
+# Debug-output
+debug_*.html
+scraper_output.log
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
