@@ -1,0 +1,45 @@
+name: Huurhuis Research (€/m² + makelaar-ranglijst)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'   # elke maandag 04:00 UTC — benchmark verversen
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+
+      - name: Run research
+        env:
+          SCRAPE_DO_TOKEN: ${{ secrets.SCRAPE_DO_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python research.py 2>&1 | tee research_output.log
+
+      - name: Commit updated benchmark
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/prices.json data/makelaars_ranking.json || true
+          git diff --cached --quiet || git commit -m "research: update €/m² benchmark + makelaar-ranglijst"
+          git push || true
+
+      - name: Upload debug HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-debug
+          path: |
+            debug_*.html
+            research_output.log
+          retention-days: 3
+          if-no-files-found: ignore
