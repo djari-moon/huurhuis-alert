@@ -78,6 +78,7 @@ MAKELAARS = [
         "url": "https://leygraafmakelaars.nl/huurwoningen/",
         "link_re": r"/woningen/[a-z0-9-]+-\d{4}",
         "city_filter": "alkmaar",
+        "super": True,              # zonder super soms geblokkeerd (flaky 3↔0)
         "render": False,
     },
     {

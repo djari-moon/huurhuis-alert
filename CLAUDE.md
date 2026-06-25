@@ -28,21 +28,26 @@ van de makelaar en pas later op Funda/Pararius. Daar zit de snelheidswinst.
 - Buitenruimte (balkon/tuin) + gemeubileerd = bonus in de alert, geen harde filter
 - Verhuurde woningen worden NIET gealert (wel meegenomen in de €/m²-research)
 
-## Bronnen & status (laatste validatie)
+## Bronnen & status (live gevalideerd, juni 2026)
 
-| Bron | Werkt | Aanpak |
-|------|-------|--------|
-| 123Wonen, 072Wonen | ✅ | server-rendered, eigen platform |
-| Pinedo, Van der Borden, Leygraaf | ✅ | server-rendered (Realworks/WP) |
-| Kloes & Goudsblom | ✅ | werkt; vaak geen Alkmaar-aanbod (regio Castricum) |
-| Verhuurmakelaar Bas | ✅ | multi-stad, city_filter op ankertekst, verhuurd-filter |
-| Pararius | ✅ | groot huuraanbod, makkelijk |
-| **ikwilhuren (MVGM)** | ⚠️ | paginatie/sort tunen — stad-filter werkt niet via URL |
-| **Vos** | ⚠️ | JS-widget (al4), render=true — selector tunen na 1e render-fetch |
-| **Funda** | ⚠️ | Akamai → super+render; JSON-LD eerst, anders DOM — tunen op debug |
+| Bron | Werkt | Scrape.do-modus | Aanpak |
+|------|-------|-----------------|--------|
+| 123Wonen (12) | ✅ | normaal (1 cr) | eigen platform |
+| 072Wonen (7) | ✅ | normaal | eigen platform |
+| Van der Borden (4) | ✅ | normaal | Realworks/WP |
+| Pinedo (4) | ✅ | **super+render** | DDoS-Guard "One moment"-challenge |
+| Leygraaf (3) | ✅ | **super** | zonder super soms geblokkeerd (flaky) |
+| Pararius (12) | ✅ | **super** | Cloudflare → 502 zonder super |
+| Funda (8) | ✅ | **super+render** | Akamai; JSON-LD eerst, anders DOM |
+| Kloes & Goudsblom | ➖ | normaal | werkt; meestal geen Alkmaar (regio Castricum) |
+| Verhuurmakelaar Bas | ➖ | normaal | werkt; nu alleen verhuurd-aanbod (correct gefilterd) |
+| **ikwilhuren (MVGM)** | ⚠️ | normaal | geen Alkmaar-stock nu; stad-filter is client-side JS |
+| **Vos** | ⚠️ | render | al4-widget haalt data uit aparte JS-API — niet opgelost |
 
-Geen enkele makelaarssite heeft anti-bot; gewone fetch werkt. Funda is de enige
-met zware bescherming (Scrape.do `super=true`).
+**Credit-strategie:** super-mode (~10 cr) is duur en alleen nodig bij anti-bot.
+Default = normale fetch (1 cr). Super staat AAN voor: Pararius, Funda, Pinedo,
+Leygraaf (zie `super`/`render` per makelaar in `makelaars.py`, en `_FETCH_MODE`
+in `scraper.py` voor de detailpagina's).
 
 ## Hoe de makelaar-scraper werkt (`scrape_makelaar`)
 
@@ -92,11 +97,20 @@ gh run view <id> --log
 
 ## Backlog / tunen
 
-1. **ikwilhuren** — juiste Alkmaar-URL/paginatie vinden (client-side filter).
-2. **Vos** — selector bepalen op de gerenderde HTML (`debug_vos.html`).
-3. **Funda** — JSON-LD/DOM-selectors valideren op `debug_funda.html`.
-4. **cron-job.org** instellen op de `alert.yml` workflow_dispatch endpoint.
-5. €/m²-benchmark verschijnt automatisch in `data/prices.json` na de 1e research-run.
+1. **Vos** — al4-widget laadt uit een aparte JS-API (de `data-url` endpoints geven
+   ook alleen de shell). Vergt reverse-engineeren van de Realworks-feed. Lage prio:
+   Pararius/Funda pakken vos-aanbod tóch op. Best-effort 0 voor nu.
+2. **ikwilhuren** — heeft zelden Alkmaar-aanbod; filter is client-side JS. Config
+   vangt 't zodra een Alkmaar-listing op de aanbodpagina verschijnt. Niet kritisch.
+3. **€/m²-benchmark** — vult zich automatisch in `data/prices.json` na de 1e
+   research-run (maandag, of handmatig `research.yml` dispatchen).
+4. **Leygraaf** in de gaten houden — op super gezet; als 't stabiel is kan 't terug
+   naar normaal voor credits.
+
+## Status: LIVE ✅
+
+Draait elke 5 min via cron-job.org → `alert.yml`. Secrets staan. Eerste seed-run
+gedaan. 7 bronnen leveren ~41 woningen; alerts gaan naar de Telegram-groep.
 
 ## Regels
 
