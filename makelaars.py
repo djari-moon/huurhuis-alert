@@ -12,8 +12,10 @@ Velden:
   link_re      — regex: een href is een woning-detail als deze matcht
   city_filter  — alleen woningen meenemen als dit (lowercase) in href OF
                  ankertekst voorkomt. Leeg = geen filter (site is al Alkmaar).
-  render       — True als de woningen via JavaScript geladen worden (Scrape.do
-                 render=true, kost meer credits). 8/9 sites: False.
+  super        — Scrape.do super-mode (residential proxy, ~10 credits). Alleen
+                 nodig bij anti-bot (Pinedo=DDoS-Guard). Default False = 1 credit.
+  render       — True als de woningen via JavaScript geladen worden (headless
+                 Chromium, meer credits). Anders gewone fetch.
 
 Bijna alle sites tonen het aanbod server-side (link-mode): we pakken de
 anchors die `link_re` matchen, dedupen op URL, en de AI haalt m²/kamers/etc.
@@ -51,7 +53,8 @@ MAKELAARS = [
         "url": "https://pinedo.nl/huurwoningen/",
         "link_re": r"/woningaanbod/[a-z0-9][a-z0-9-]+/",
         "city_filter": "alkmaar",   # toont ook Haarlem etc.
-        "render": False,
+        "super": True,              # DDoS-Guard "One moment" challenge
+        "render": True,
     },
     {
         "key": "vanderborden",

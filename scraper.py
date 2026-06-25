@@ -121,7 +121,7 @@ def _text(el, selector: str) -> str:
 def scrape_pararius() -> list:
     base = "https://www.pararius.nl"
     url = f"{base}/huurwoningen/{CITY}/0-{PRICE_MAX}"
-    html = scrape_do_fetch(url, super_mode=True, retries=1, geo_code="nl")
+    html = scrape_do_fetch(url, super_mode=False, retries=1, geo_code="nl")
     if not html:
         log.warning("Pararius: geen HTML")
         return []
@@ -209,8 +209,8 @@ def _parse_funda_jsonld(html: str) -> list:
 
 def scrape_makelaar(cfg: dict) -> list:
     key = cfg["key"]
-    html = scrape_do_fetch(cfg["url"], super_mode=True, retries=1, geo_code="nl",
-                           render=cfg.get("render", False))
+    html = scrape_do_fetch(cfg["url"], super_mode=cfg.get("super", False), retries=1,
+                           geo_code="nl", render=cfg.get("render", False))
     if not html:
         log.warning("Makelaar %s: geen HTML", key)
         return []
@@ -248,9 +248,16 @@ def scrape_makelaar(cfg: dict) -> list:
 # ── Detailpagina's (parallel) ─────────────────────────────────────────────────
 
 
+# Per-bron fetch-modus voor detailpagina's. Alleen waar nodig super/render
+# (= dure credits): Funda (Akamai), Pinedo (DDoS-Guard), Vos (JS-widget).
+_FETCH_MODE = {m["key"]: (m.get("super", False), m.get("render", False)) for m in MAKELAARS}
+_FETCH_MODE["funda"] = (True, True)
+_FETCH_MODE["pararius"] = (False, False)
+
+
 def _fetch_detail(lst: Listing) -> Listing:
-    render = lst.source in ("funda", "vos")
-    html = scrape_do_fetch(lst.url, super_mode=True, retries=1, geo_code="nl", render=render)
+    sup, ren = _FETCH_MODE.get(lst.source, (False, False))
+    html = scrape_do_fetch(lst.url, super_mode=sup, retries=1, geo_code="nl", render=ren)
     if html and len(html) > 3000:
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
