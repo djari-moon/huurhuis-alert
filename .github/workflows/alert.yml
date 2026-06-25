@@ -1,0 +1,63 @@
+name: Huurhuis Alert
+
+on:
+  workflow_dispatch:
+    inputs:
+      clear_db:
+        description: 'Database wissen (volledige nieuwe scan)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: huurhuis-alert-run
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+
+      - name: Restore database from cache
+        if: ${{ inputs.clear_db == false }}
+        uses: actions/cache/restore@v4
+        with:
+          path: listings.db
+          key: huurhuis-db-dummy
+          restore-keys: huurhuis-db-
+
+      - name: Run scraper
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SCRAPE_DO_TOKEN: ${{ secrets.SCRAPE_DO_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: python scraper.py 2>&1 | tee scraper_output.log
+
+      - name: Save database to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: listings.db
+          key: huurhuis-db-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload debug HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-html
+          path: |
+            debug_*.html
+            scraper_output.log
+          retention-days: 3
+          if-no-files-found: ignore
