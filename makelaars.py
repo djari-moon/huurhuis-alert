@@ -44,7 +44,8 @@ MAKELAARS = [
         "name": "ikwilhuren.nu (MVGM)",
         "url": "https://ikwilhuren.nu/aanbod/",
         "link_re": r"/object/[^/]+",
-        "city_filter": "alkmaar",   # toont heel NL → filter op Alkmaar
+        "city_filter": "alkmaar",   # toont heel NL → filter op Alkmaar (stad in href)
+        "pages": 5,                 # zoekform is POST+CSRF → eerste 5 pagina's doorlopen
         "render": False,
     },
     {
@@ -87,7 +88,10 @@ MAKELAARS = [
         "url": "https://www.vosmakelaardij.nl/aanbod/woningaanbod/huur/aantal-50/",
         "link_re": r"huis-\d+|appartement-\d+|woonhuis-\d+",
         "city_filter": "alkmaar",
-        "render": True,             # al4-widget → JS-geladen, tunen na 1e run
+        "render": True,             # al4-widget → JS-geladen
+        "render_wait": 9000,        # widget-XHR tijd geven
+        "block_resources": False,   # alle JS/resources laden
+        "wait_selector": "a[href*='huis-'], a[href*='appartement-']",
     },
     {
         "key": "verhuurmakelaarbas",

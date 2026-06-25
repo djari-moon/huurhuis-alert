@@ -209,38 +209,46 @@ def _parse_funda_jsonld(html: str) -> list:
 
 def scrape_makelaar(cfg: dict) -> list:
     key = cfg["key"]
-    html = scrape_do_fetch(cfg["url"], super_mode=cfg.get("super", False), retries=1,
-                           geo_code="nl", render=cfg.get("render", False))
-    if not html:
-        log.warning("Makelaar %s: geen HTML", key)
-        return []
-    _dump_debug(key, html)
-
-    soup = BeautifulSoup(html, "html.parser")
     base = _base_of(cfg["url"])
     link_re = re.compile(cfg["link_re"], re.I)
     city = cfg.get("city_filter", "").lower()
 
+    # Paginatie: cfg["pages"]=N → ?page=0..N-1 doorlopen. Anders 1 pagina.
+    pages = cfg.get("pages", 1)
+    sep = "&" if "?" in cfg["url"] else "?"
+    urls = [f"{cfg['url']}{sep}page={i}" for i in range(pages)] if pages > 1 else [cfg["url"]]
+
     listings = {}
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if not link_re.search(href):
-            continue
-        url_full = urljoin(base, href)
-        if url_full in listings:
-            continue
-        text = a.get_text(" ", strip=True)
-        hay = (href + " " + text).lower()
-        if city and city not in hay:
-            continue
-        if re.search(r"\bverhuurd\b", hay):   # alleen beschikbaar aanbod alerten
-            continue
-        listings[url_full] = Listing(
-            id=_hash_id(key, url_full), source=key, makelaar=cfg["name"],
-            title=_clean_title(text, href), url=url_full,
-            price=parse_price(text), area_m2=parse_area(text),
-            location=CITY_LABEL,
+    for n, url in enumerate(urls):
+        html = scrape_do_fetch(
+            url, super_mode=cfg.get("super", False), retries=1, geo_code="nl",
+            render=cfg.get("render", False), render_wait=cfg.get("render_wait", 5000),
+            wait_selector=cfg.get("wait_selector", ""),
+            block_resources=cfg.get("block_resources"),
         )
+        if not html:
+            continue
+        _dump_debug(key if n == 0 else f"{key}_p{n}", html)
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            if not link_re.search(href):
+                continue
+            url_full = urljoin(base, href)
+            if url_full in listings:
+                continue
+            text = a.get_text(" ", strip=True)
+            hay = (href + " " + text).lower()
+            if city and city not in hay:
+                continue
+            if re.search(r"\bverhuurd\b", hay):   # alleen beschikbaar aanbod alerten
+                continue
+            listings[url_full] = Listing(
+                id=_hash_id(key, url_full), source=key, makelaar=cfg["name"],
+                title=_clean_title(text, href), url=url_full,
+                price=parse_price(text), area_m2=parse_area(text),
+                location=CITY_LABEL,
+            )
     log.info("Makelaar %s: %d woningen", key, len(listings))
     return list(listings.values())
 
