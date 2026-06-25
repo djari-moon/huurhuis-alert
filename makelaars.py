@@ -88,10 +88,10 @@ MAKELAARS = [
         "url": "https://www.vosmakelaardij.nl/aanbod/woningaanbod/huur/aantal-50/",
         "link_re": r"huis-\d+|appartement-\d+|woonhuis-\d+",
         "city_filter": "alkmaar",
-        "render": True,             # al4-widget → JS-geladen
-        "render_wait": 9000,        # widget-XHR tijd geven
-        "block_resources": False,   # alle JS/resources laden
-        "wait_selector": "a[href*='huis-'], a[href*='appartement-']",
+        # al4-widget laadt uit een Realworks JS-API die Scrape.do niet bereikt
+        # (render+waitSelector+9s getest → 0). render uit om credits te sparen;
+        # vos-aanbod komt tóch via Pararius/Funda. Heractiveer als de API gekraakt is.
+        "render": False,
     },
     {
         "key": "verhuurmakelaarbas",
