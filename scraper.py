@@ -121,7 +121,7 @@ def _text(el, selector: str) -> str:
 def scrape_pararius() -> list:
     base = "https://www.pararius.nl"
     url = f"{base}/huurwoningen/{CITY}/0-{PRICE_MAX}"
-    html = scrape_do_fetch(url, super_mode=False, retries=1, geo_code="nl")
+    html = scrape_do_fetch(url, super_mode=True, retries=1, geo_code="nl")  # Cloudflare → super nodig
     if not html:
         log.warning("Pararius: geen HTML")
         return []
@@ -252,7 +252,7 @@ def scrape_makelaar(cfg: dict) -> list:
 # (= dure credits): Funda (Akamai), Pinedo (DDoS-Guard), Vos (JS-widget).
 _FETCH_MODE = {m["key"]: (m.get("super", False), m.get("render", False)) for m in MAKELAARS}
 _FETCH_MODE["funda"] = (True, True)
-_FETCH_MODE["pararius"] = (False, False)
+_FETCH_MODE["pararius"] = (True, False)   # Cloudflare → super nodig
 
 
 def _fetch_detail(lst: Listing) -> Listing:
